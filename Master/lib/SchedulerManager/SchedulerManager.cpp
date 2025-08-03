@@ -70,7 +70,7 @@ void SchedulerManager::applySchedule(const DateTime& now, bool enableFlag) {
         if (!slot.enabled) continue;
         uint16_t onMin  = slot.onTime.hour * 60 + slot.onTime.minute;
         uint16_t offMin = slot.offTime.hour * 60 + slot.offTime.minute;
-        if (onMin > offMin) {  // cruza medianoche
+/*      if (onMin > offMin) {  // cruza medianoche
           if (isWithinInterval(current, slot.onTime, slot.offTime)) {
             // Validación extra: si estamos en el "día siguiente",
             // y es después del offTime, no activar
@@ -80,7 +80,14 @@ void SchedulerManager::applySchedule(const DateTime& now, bool enableFlag) {
             ledState = true;
             return;
           }
-        }
+        } */
+        if (onMin > offMin) {  // cruza medianoche
+          if (now.hour < 12 && isWithinInterval(current, slot.onTime, slot.offTime)) {
+            // Estamos en la madrugada del día actual → válido
+            ledState = true;
+            return;
+          } 
+        }  
     }
 }
 
@@ -108,7 +115,7 @@ void SchedulerManager::applySchedule2(const DateTime& now, bool enableFlag) {
         if (!slot.enabled) continue;
         uint16_t onMin  = slot.onTime.hour * 60 + slot.onTime.minute;
         uint16_t offMin = slot.offTime.hour * 60 + slot.offTime.minute;
-        if (onMin > offMin) {
+/*      if (onMin > offMin) {
           if (isWithinInterval(current, slot.onTime, slot.offTime)) {
             // Validación extra: si estamos en el "día siguiente", 
             // y es después del offTime, no activar
@@ -118,6 +125,13 @@ void SchedulerManager::applySchedule2(const DateTime& now, bool enableFlag) {
             led2State = true;
             return;
           }
+        } */
+        if (onMin > offMin) {  // cruza medianoche
+          if (now.hour < 12 && isWithinInterval(current, slot.onTime, slot.offTime)) {
+            // Estamos en la madrugada del día actual → válido
+            ledState = true;
+            return;
+          } 
         }
     }
 }

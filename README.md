@@ -2,41 +2,37 @@
 
 LightControl es un sistema distribuido basado en microcontroladores ESP32, diseñado para controlar de manera inalámbrica luminarias de desinfección (u otros dispositivos) desde una unidad **master** hacia múltiples nodos **slave**. La comunicación se realiza utilizando el protocolo **ESP-NOW**, optimizado para redes sin infraestructura WiFi.
 
-## 🧱 Arquitectura General
+## 📌 Descripción general
 
-- **Master ESP32**
+El proyecto **LightControl** permite controlar salidas de manera remota desde un master hacia varios slaves, usando el protocolo de comunicación ESPNOW (por ejemplo, relés o LEDs) según horarios semanales definidos por el usuario.
+
+- ### **Master ESP32 - Funciones básicas**
   - Se comunica con el usuario (pantalla Nextion y consola serial).
   - Controla el estado de encendido/apagado de:
     - LED principal (`GPIO2` de cada slave). (Luz ambiental)
     - Slot 1 (`GPIO33` de cada slave). (Luz de desinfección)
     - Slot 2 (`GPIO32` de cada slave). (Equipo de purificación)
-  - Consulta estados programados de encendido/apagado diarios (por día de la semana), dos por dia, definidos por slots (slot0 y slot1)
+  - Consulta estados programados de encendido/apagado diarios (por día de la semana), dos por dia, definidos por slots (slot0 y slot1). Contempla horarios "overnight" (ej On: 20:30 de un viernes Off 03:45 del sábado)
   - Envía comandos a todos los slaves.
 
-- **Slave ESP32**
+- ### **Con la pantalla táctil Nextion desde el Master:**
+  - Muestra la fecha y hora actual.
+  - Permite modificar fecha y hora.
+  - Soporta programación de encendidos/apagados diarios (hasta 2 ciclos por día denominados slots).
+  - Almacena los datos de los ciclos programados en una memoria EEPROM externa (24C32).
+  - Mantiene la hora mediante un RTC DS3231, incluso sin energía.
+  - Ejecuta los ciclos aún si se reinician los ESP32.
+  - Permite el borrado de toda la programación de ciclos desde la interfaz.
+  - Permite consultar los ciclos configurados por día.
+  - Todo el sistema de programación de ciclos ON OFF está protegido por password, para evitar que cualquiera la modifique.
+
+- ### **Slave ESP32 - Funciones básicas**
   - Escucha mensajes del master.
   - Ejecuta comandos para encender/apagar salidas.
 
-
-## 📌 Descripción general
-
-El proyecto **LightControl** permite controlar salidas de manera remota desde un master hacia varios slaves, usando el protocolo de comunicación ESPNOW (por ejemplo, relés o LEDs) según horarios semanales definidos por el usuario.
-
-El sistema desde el Master:
-
-- Muestra la fecha y hora actual en una pantalla Nextion.
-- Permite modificar fecha y hora desde la interfaz táctil.
-- Soporta programación de encendidos/apagados diarios (hasta 2 ciclos por día).
-- Almacena los datos en una memoria EEPROM externa (24C32).
-- Mantiene la hora mediante un RTC DS3231, incluso sin energía.
-- Ejecuta los ciclos aún si se reinicia el ESP32.
-- Permite borrar toda la programación desde la interfaz.
-- Permite consultar los ciclos configurados por día.
-
-
 ## 📡 Comunicación — ESP-NOW
 
-Se utiliza una estructura de mensajes binarios optimizada para minimizar el uso de ancho de banda. Todos los mensajes entre dispositivos se encapsulan en estructuras definidas en `CommProtocol.h`.
+Se utiliza una estructura de mensajes optimizada para minimizar el uso de ancho de banda. Todos los mensajes entre dispositivos se encapsulan en estructuras definidas en el módulo`CommProtocol.h`.
 
 ## 📁 Estructura del proyecto
 ```text
@@ -88,6 +84,7 @@ LightControl
     │       └── SlaveApp.h
     ├── platformio.ini
     └── src
+         └── main.cpp
 ```
 
 ## 🔌 Conexiones MASTER
@@ -104,26 +101,26 @@ LightControl
 |                     | GPIO16 (RX2)     | RX del ESP32 ← TX del Nextion             |
 |                     | VCC              | 5V (o 3.3V si el modelo lo soporta)       |
 |                     | GND              | GND común                                |
-| **LED azul**  | GPIO02            | Salida Desinfección simulada     |
-| **LED rojo**  | GPIO25            | Salida Purificación simulada|
+| **LED azul**  | GPIO02            | Salida Desinfección  simulada (led interno)     |
+| **LED rojo**  | GPIO25            | Salida Purificación simulada (led externo)|
 ---
 
 ## 🔌 Conexiones SLAVE
 | Componente          | Pin ESP32       | Detalles                                 |
 |---------------------|------------------|-------------------------------------------|
-| **LED azul**  | GPIO32            | Salida Desinfección simulada     |
-| **LED rojo**  | GPIO33            | Salida Purificación simulada |
+| **LED azul**  | GPIO32            | Salida Desinfección simulada (led externo)     |
+| **LED rojo**  | GPIO33            | Salida Purificación simulada (led externo) |
 ---
 
 ## 🧱 Diseño modular
 
-Los módulos del sistema ubicados dentro de la carpeta `lib/` están desarrollados siguiendo el principio de responsabilidad única (*Single Responsibility Principle*).  
+Los módulos del sistema ubicados dentro de la carpeta `lib/`, están desarrollados siguiendo el principio de responsabilidad única (*Single Responsibility Principle*).  
 Cada uno encapsula una funcionalidad específica (como gestión del RTC, comunicación con el display, acceso a la EEPROM, etc.), lo que permite un código más limpio, mantenible y reutilizable.
 
-## 📋 Requisitos
+## 📋 Requisitos adicionales
 
-- Carga del `NextionClock.tft` en la pantalla Nextion mediante tarjeta microSD o USB-TTL
+- Carga del `NextionClock.tft` en la pantalla Nextion mediante tarjeta microSD o mediante adaptador USB-TTL
 
 ## 👤 Autor
 
-Es un ejercicio educativo desarrollado por José Faginas, usando el siguiente toolchain: VsCode + PlatformIO en C++ y para la interfaz de usuario: el Nextion Editor. 
+Es un ejercicio educativo desarrollado por José Faginas, usando el siguiente toolchain: **VsCode + PlatformIO en C++**. Para la interfaz de usuario: **Nextion Editor**. 
