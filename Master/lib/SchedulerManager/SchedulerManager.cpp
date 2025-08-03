@@ -8,10 +8,8 @@ static bool lastSentStateSlot2 = false;
 SchedulerManager::SchedulerManager() : ledState(false) {}
 
 void SchedulerManager::begin() {
-    // La definición y uso de estos pines como salidas en el MASTER
-    // se han habilitado para ver el estado de las salidas en los slaves
-    pinMode(SCHEDULER_LED_PIN, OUTPUT);    // GPIO02 desinfección en master
-    pinMode(SCHEDULER_LED2_PIN, OUTPUT);   // GPIO25 purificación en master
+    pinMode(SCHEDULER_LED_PIN, OUTPUT);
+    pinMode(SCHEDULER_LED2_PIN, OUTPUT);   // GPIO25
     loadFromEEPROM();
     loadFromEEPROM2();
 }
@@ -70,24 +68,15 @@ void SchedulerManager::applySchedule(const DateTime& now, bool enableFlag) {
         if (!slot.enabled) continue;
         uint16_t onMin  = slot.onTime.hour * 60 + slot.onTime.minute;
         uint16_t offMin = slot.offTime.hour * 60 + slot.offTime.minute;
-/*      if (onMin > offMin) {  // cruza medianoche
-          if (isWithinInterval(current, slot.onTime, slot.offTime)) {
-            // Validación extra: si estamos en el "día siguiente",
-            // y es después del offTime, no activar
-            if (current >= slot.offTime) {
-                continue; // Ya pasó el offTime → no debemos reactivar
-            }
-            ledState = true;
-            return;
-          }
-        } */
         if (onMin > offMin) {  // cruza medianoche
-          if (now.hour < 12 && isWithinInterval(current, slot.onTime, slot.offTime)) {
-            // Estamos en la madrugada del día actual → válido
-            ledState = true;
-            return;
-          } 
-        }  
+            if (isWithinInterval(current, slot.onTime, slot.offTime)) {
+                if (current >= slot.offTime) {
+                  continue;
+                }
+                ledState = true;
+                return;
+            }
+        }
     }
 }
 
@@ -106,8 +95,8 @@ void SchedulerManager::applySchedule2(const DateTime& now, bool enableFlag) {
     for (const auto& slot : today.slots) {
         if (!slot.enabled) continue;
         if (isWithinInterval(current, slot.onTime, slot.offTime)) {
-          led2State = true;
-          return;
+            led2State = true;
+            return;
         }
     }
 
@@ -115,23 +104,14 @@ void SchedulerManager::applySchedule2(const DateTime& now, bool enableFlag) {
         if (!slot.enabled) continue;
         uint16_t onMin  = slot.onTime.hour * 60 + slot.onTime.minute;
         uint16_t offMin = slot.offTime.hour * 60 + slot.offTime.minute;
-/*      if (onMin > offMin) {
-          if (isWithinInterval(current, slot.onTime, slot.offTime)) {
-            // Validación extra: si estamos en el "día siguiente", 
-            // y es después del offTime, no activar
-            if (current >= slot.offTime) {
-              continue; // Ya pasó el offTime → no debemos reactivar
+        if (onMin > offMin) {
+            if (isWithinInterval(current, slot.onTime, slot.offTime)) {
+                 if (current >= slot.offTime) {
+                  continue;
+                }
+                led2State = true;
+                return;
             }
-            led2State = true;
-            return;
-          }
-        } */
-        if (onMin > offMin) {  // cruza medianoche
-          if (now.hour < 12 && isWithinInterval(current, slot.onTime, slot.offTime)) {
-            // Estamos en la madrugada del día actual → válido
-            ledState = true;
-            return;
-          } 
         }
     }
 }
@@ -153,6 +133,12 @@ bool SchedulerManager::isWithinInterval(const TimePoint& now, const TimePoint& s
     }
 }
 
+void SchedulerManager::setSchedule(uint8_t day, uint8_t slot, const TimePoint& on, const TimePoint& off, bool enabled) {
+    if (day > 6 || slot > 1) return;
+    schedule.days[day].slots[slot] = { on, off, (uint8_t)enabled };
+    saveToEEPROM();
+}
+
 const WeeklySchedule& SchedulerManager::getSchedule() const {
     return schedule;
 }
@@ -161,10 +147,9 @@ void SchedulerManager::loadFromEEPROM() {
     EEPROMManager eeprom(EEPROM_ADDRESS);
     eeprom.begin();
     eeprom.readBytes(EEPROM_SCHEDULE_ADDR, (uint8_t*)&schedule, EEPROM_SCHEDULE_SIZE);
-
     for (int d = 0; d < 7; ++d) {
         for (int s = 0; s < 2; ++s) {
-          const auto& slot = schedule.days[d].slots[s];
+            const auto& slot = schedule.days[d].slots[s];
         }
     }
 }
@@ -182,7 +167,7 @@ void SchedulerManager::loadFromEEPROM2() {
 
     for (int d = 0; d < 7; ++d) {
         for (int s = 0; s < 2; ++s) {
-          const auto& slot = schedule2.days[d].slots[s];
+            const auto& slot = schedule2.days[d].slots[s];
         }
     }
 }
@@ -200,7 +185,7 @@ void SchedulerManager::handleSchedulerCommand(const String& cmd) {
     char buffer[cmd.length() + 1];
     cmd.toCharArray(buffer, sizeof(buffer));
     char* token = strtok(buffer, ",");
-   
+  
     while (token && count < 7) {
         values[count++] = atoi(token);
         token = strtok(nullptr, ",");
@@ -212,10 +197,7 @@ void SchedulerManager::handleSchedulerCommand(const String& cmd) {
         TimePoint on = { (uint8_t)values[2], (uint8_t)values[3] };
         TimePoint off = { (uint8_t)values[4], (uint8_t)values[5] };
         bool enabled = values[6];
-        
-        if (day > 6 || slot > 1) return;
-        schedule.days[day].slots[slot] = { on, off, (uint8_t)enabled };
-        saveToEEPROM();
+        setSchedule(day, slot, on, off, enabled);
     } else {
         Serial.println("[Scheduler] Error de formato en comando SCHED=");
     }
@@ -308,6 +290,6 @@ void SchedulerManager::showSchedule2ForDay(uint8_t day, NextionManager& display)
         }
 
         String cmd = "slot" + String(s) + ".txt=\"" + String(buf) + "\"";
-        display.sendCommand(cmd);
+        display.sendCommand(cmd);  // reusa mismo formato visual
     }
 }
