@@ -17,7 +17,7 @@ El proyecto **LightControl** permite controlar salidas de manera remota desde un
 
 - ### **Con la pantalla táctil Nextion desde el Master:**
   - Muestra la fecha y hora actual.
-  - Permite controlar el encendido /apagado de la luz ambiental (GPIO2 en los slaves) con tres valores de iluminación a la luz ambiental (GPIO19): alta (100%) media (66%) y baja (33%).
+  - Permite controlar el encendido /apagado de la luz ambiental (simulado por el led interno GPIO2 en los slaves) y su intensidad usando la salida GPIO19 con tres niveles: alto (100%) medio (66%) y bajo (33%).
   - Permite modificar fecha y hora.
   - Soporta programación de encendidos/apagados diarios (hasta 2 ciclos por día denominados slots).
   - Almacena los datos de los ciclos programados en una memoria EEPROM externa (24C32).
@@ -29,7 +29,8 @@ El proyecto **LightControl** permite controlar salidas de manera remota desde un
 
 - ### **Slave ESP32 - Funciones básicas**
   - Escucha mensajes del master.
-  - Ejecuta comandos para encender/apagar salidas.
+  - Controla el encendido apagado de la luz ambiental con tres niveles de intensidad.
+  - Ejecuta comandos para encender/apagar salidas según los horarios programados.
 
 ## 📡 Comunicación — ESP-NOW
 
@@ -122,8 +123,8 @@ Cada uno encapsula una funcionalidad específica (como gestión del RTC, comunic
 
 ## 📋 Requisitos adicionales
 
-- Carga del `NextionClock.tft` en la pantalla Nextion mediante tarjeta microSD o mediante adaptador USB-TTL
+- Carga del `LightControl.tft` en la pantalla Nextion mediante tarjeta microSD o mediante adaptador USB-TTL. LightControl.HMI es el código fuente. 
 
 ## 👤 Autor
 
-Es un ejercicio educativo desarrollado por José Faginas, usando el siguiente toolchain: **VsCode + PlatformIO en C++**. Para la interfaz de usuario: **Nextion Editor**. 
+Es un ejercicio educativo desarrollado por José Faginas, usando el siguiente toolchain: **VsCode + PlatformIO en C++**. Para la interfaz de usuario: **Nextion Editor V1.67.1**. 
