@@ -39,6 +39,7 @@ void SystemManager::update() {
         DateTime nowTime;
         if (rtc.getDateTime(nowTime)) {
             nextion.showDateTime(nowTime);
+            nextion.showDateComponents(nowTime);
             nextion.showWeekday(nowTime.weekday);
             scheduler.update(nowTime, true);           // Desinfeccion (GPIO02 en MASTER)
             scheduler.updateSecondary(nowTime, true);  // Purificacion (GPIO25 en MASTER)
@@ -81,12 +82,25 @@ void SystemManager::handleCommand(const String& cmd) {
         Serial.print("[System] Comando recibido: SHOW2=");
         Serial.println(day);
         scheduler.showSchedule2ForDay(day, nextion);
-    }     else if (cmd == "LED_ON") {
-        Serial.println("[System] Comando LED_ON recibido desde Nextion");
-        MasterLogic::forceLedState(true);
+    } else if (cmd.startsWith("LED_ON")) {
+        uint8_t pwm_value = 255; // Por defecto 100%
+
+        if (cmd == "LED_ON100") {
+            pwm_value = 255; // 100%
+        } else if (cmd == "LED_ON66") {
+            pwm_value = static_cast<uint8_t>(255 * 0.66); // 66%
+        } else if (cmd == "LED_ON33") {
+            pwm_value = static_cast<uint8_t>(255 * 0.33); // 33%
+        } else if (cmd != "LED_ON") {
+            Serial.println("[System] Comando LED_ON con valor desconocido");
+            return;
+        }
+        Serial.printf("[System] Comando LED_ON recibido desde Nextion (PWM=%u)\n", pwm_value);
+        MasterLogic::forceLedState(true, pwm_value);
     } else if (cmd == "LED_OFF") {
         Serial.println("[System] Comando LED_OFF recibido desde Nextion");
-        MasterLogic::forceLedState(false);
+        MasterLogic::forceLedState(false, 0);
+
     } else {
         Serial.println("[Nextion] Comando desconocido: " + cmd);
     }

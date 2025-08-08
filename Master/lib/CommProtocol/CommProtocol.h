@@ -16,6 +16,7 @@ struct __attribute__((packed)) MsgToSlave {
     bool led_on;        // Estado de GPIO2
     bool slot1_on;      // Estado de GPIO33
     bool slot2_on;      // Estado de GPIO32
+    uint8_t pwm_value;  // Valor PWM (0-255) asociado al led_on
 };
 
 // Mensaje que el Slave envía al Master

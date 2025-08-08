@@ -11,6 +11,8 @@ namespace MasterLogic {
 
     static uint8_t payload_id = 0;
 
+    static uint8_t led_pwm_value = 255; // Duty cycle inicial (100%)
+
     static bool currentSlot1State = false;
     static bool currentSlot2State = false;
 
@@ -50,21 +52,29 @@ namespace MasterLogic {
         sendSlot2ToSlaves(schedulerManager.getSlot2State());
     }
 
-    void forceLedState(bool state) {
-        if (led_state != state) {
+    void forceLedState(bool state, uint8_t pwm_value) {
+        if (led_state != state || led_pwm_value != pwm_value) {
             led_state = state;
-            Serial.printf("[MASTER] LUZ: %s\n", led_state ? "ON" : "OFF");
-            sendToAllSlaves(led_state);
+            led_pwm_value = pwm_value;
+            Serial.printf("[MASTER] LUZ: %s (PWM=%u)\n", 
+                        led_state ? "ON" : "OFF", 
+                        led_pwm_value);
+            sendToAllSlaves(led_state, led_pwm_value);
         }
     }
 
     void sendToAllSlaves(bool led_on) {
+        sendToAllSlaves(led_on, led_pwm_value); // Usa el valor global actual
+    }
+
+    void sendToAllSlaves(bool led_on, uint8_t pwm_value) {
         MsgToSlave msg = {
             .type = MsgType::STATUS_UPDATE,
             .payload_id = static_cast<uint8_t>(++payload_id),
             .led_on = led_on,
             .slot1_on = currentSlot1State,
-            .slot2_on = currentSlot2State
+            .slot2_on = currentSlot2State,
+            .pwm_value = pwm_value
         };
         sendToAllSlaves(msg);
     }
@@ -72,28 +82,30 @@ namespace MasterLogic {
     void sendSlot1ToSlaves(bool state) {
         if (currentSlot1State == state) return;  // Evita reenvíos innecesarios
         currentSlot1State = state;
-
         MsgToSlave msg;
         msg.type = MsgType::STATUS_UPDATE;
+        msg.payload_id = static_cast<uint8_t>(++payload_id);
         msg.led_on = led_state;
         msg.slot1_on = currentSlot1State;
         msg.slot2_on = currentSlot2State;
+        msg.pwm_value = led_pwm_value; // Incluye PWM actual
 
-        Serial.printf("[MASTER] Enviando estado SLOT1 (%s) a Slaves\n", state ? "ON" : "OFF");
+        Serial.printf("[MASTER] Enviando estado Led desinfeccion (%s) a Slaves\n", state ? "ON" : "OFF");
         sendToAllSlaves(msg);
     }
 
     void sendSlot2ToSlaves(bool state) {
         if (currentSlot2State == state) return;
         currentSlot2State = state;
-
         MsgToSlave msg;
         msg.type = MsgType::STATUS_UPDATE;
+        msg.payload_id = static_cast<uint8_t>(++payload_id);
         msg.led_on = led_state;
         msg.slot1_on = currentSlot1State;
         msg.slot2_on = currentSlot2State;
+        msg.pwm_value = led_pwm_value; // Incluye PWM actual
 
-        Serial.printf("[MASTER] Enviando estado SLOT2 (%s) a Slaves\n", state ? "ON" : "OFF");
+        Serial.printf("[MASTER] Enviando estado Led purificacion (%s) a Slaves\n", state ? "ON" : "OFF");
         sendToAllSlaves(msg);
     }
 

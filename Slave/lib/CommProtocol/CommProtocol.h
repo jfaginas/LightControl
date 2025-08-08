@@ -7,12 +7,18 @@ constexpr uint8_t MASTER_MAC[] = {0xCC, 0x50, 0xE3, 0xA1, 0x3F, 0x74};
 //------------------------------------------------------------------------------
 
 // Slave Configuracion ---------------------------------------------------------
-constexpr uint8_t SLAVE_ID = 2;  // Cambiar para cada firmware del Slave
+constexpr uint8_t SLAVE_ID = 1;  // Cambiar para cada firmware del Slave
 
 // Pines de salida controlados por el master vía ESP-NOW
 constexpr uint8_t LED_CONTROL_PIN  = 2;   // LED vinculado al botón del Nextion
 constexpr uint8_t SCHED_SLOT1_PIN  = 33;  // LED controlado por horario del slot 1
 constexpr uint8_t SCHED_SLOT2_PIN  = 32;  // LED controlado por horario del slot 2
+
+constexpr int PWM_PIN = 19;      // Pin GPIO19
+constexpr int PWM_CHANNEL = 0;   // Canal LEDC (0-15)
+constexpr int PWM_FREQ = 5000;   // Frecuencia en Hz
+constexpr int PWM_RES = 8;       // Resolución de 8 bits (0-255)
+
 
 // Definición de tipos de mensajes para distinguir el propósito
 enum class MsgType : uint8_t {
@@ -29,6 +35,8 @@ struct __attribute__((packed)) MsgToSlave {
     bool led_on;           // Estado GPIO2
     bool slot1_on;         // Estado GPIO33
     bool slot2_on;         // Estado GPIO32
+    // NUEVO PWM
+    uint8_t pwm_value;     // Valor PWM (0-255) para LED_CONTROL_PIN
 };
 
 // Mensaje que el Slave envía al Master

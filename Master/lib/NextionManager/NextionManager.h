@@ -8,16 +8,19 @@ public:
     explicit NextionManager(HardwareSerial& serial);
     void begin(uint32_t baudrate = 9600);
     void update();
+    
+    void sendCommand(const String& cmd);
+    bool isCommandAvailable() const;
+    String getLastCommand();
 
     void showDateTime(const DateTime& dt);
     void showWeekday(uint8_t weekday);
+    void showDateComponents(const DateTime &dt);
     void showError(const String& msg);
     void gotoPage(const String& pageName);
 
-    bool isCommandAvailable() const;
-    String getLastCommand();
     const char* weekdayToString(uint8_t weekday);
-    void sendCommand(const String& cmd);
+    const char *monthToString(uint8_t month);
 
 private:
     HardwareSerial& _serial;

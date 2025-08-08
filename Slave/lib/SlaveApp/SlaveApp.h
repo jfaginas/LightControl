@@ -1,5 +1,4 @@
 #pragma once
-
 #include <Arduino.h>
 #include "EspNowInterface.h"
 #include "CommProtocol.h"

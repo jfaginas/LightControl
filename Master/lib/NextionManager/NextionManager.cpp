@@ -56,7 +56,7 @@ String NextionManager::getLastCommand() {
 }
 
 void NextionManager::showDateTime(const DateTime& dt) {
-    sendCommand("tdate.txt=\"" + dt.toDateString() + "\"");
+    //sendCommand("tdate.txt=\"" + dt.toDateString() + "\"");
     sendCommand("thour.txt=\"" + dt.toTimeString() + "\"");
 }
 
@@ -79,11 +79,38 @@ void NextionManager::sendCommand(const String& cmd) {
 
 const char* NextionManager::weekdayToString(uint8_t weekday) {
     static const char* days[] = {
-        "Lunes", "Martes", "Miercoles", "Jueves",
-        "Viernes", "Sabado", "Domingo"
+        // "Lunes", "Martes", "Miercoles", "Jueves",
+        // "Viernes", "Sabado", "Domingo"
+        "Mon", "Tue", "Wed", "Thu",
+        "Fri", "Sat", "Sun"
     };
 
     if (weekday >= 1 && weekday <= 7)
         return days[(weekday + 5) % 7];  // misma conversión
+    return "???";
+}
+void NextionManager::showDateComponents(const DateTime& dt) {
+    char buffer[3];
+    snprintf(buffer, sizeof(buffer), "%02u", dt.day);
+    sendCommand("tday.txt=\"" + String(buffer) + "\"");
+    //sendCommand("tday.txt=\"" + String(dt.day) + "\"");
+    sendCommand("tmonth.txt=\"" + String(monthToString(dt.month)) + "\"");
+    sendCommand("tyear.txt=\"" + String(dt.year) + "\"");
+    //sendCommand("tddls.txt=\"" + String(weekdayToString(weekday)) + "\"");
+}
+
+const char* NextionManager::monthToString(uint8_t month) {
+    static const char* months[] = {
+        // "Enero", "Febrero", "Marzo", "Abril",
+        // "Mayo", "Junio", "Julio", "Agosto",
+        // "Septiembre", "Octubre", "Noviembre", "Diciembre"
+
+        "Jan", "Feb", "Mar", "Apr",
+        "May", "Jun", "Jul", "Aug",
+        "Set", "Oct", "Nov", "Dec"        
+    };
+
+    if (month >= 1 && month <= 12)
+        return months[month - 1];
     return "???";
 }

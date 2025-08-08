@@ -10,6 +10,12 @@ void sendStatusRequest() {
     Serial.println("[SLAVE] STATUS_REQUEST enviado al MASTER");
 }
 
+// Establecer valor PWM (0-255)
+void setPWMValue(uint8_t value) {
+    ledcWrite(PWM_CHANNEL, value);
+}
+
+
 void onReceive(const uint8_t* mac, const uint8_t* data, int len) {
 
     if (memcmp(mac, MASTER_MAC, 6) != 0) {
@@ -28,7 +34,13 @@ void onReceive(const uint8_t* mac, const uint8_t* data, int len) {
 
         case MsgType::STATUS_UPDATE:
             Serial.println("[SLAVE] Recibido STATUS_UPDATE del MASTER");
-            digitalWrite(LED_CONTROL_PIN, msg->led_on ? HIGH : LOW);
+            digitalWrite(LED_CONTROL_PIN, msg->led_on ? HIGH : LOW);  // Led de luz ambiental
+            // Control PWM en GPIO19 (solo si led_on está activo)
+            if (msg->led_on) {
+                setPWMValue(msg->pwm_value);
+            } else {
+                setPWMValue(0); // Apagar PWM
+            }
             digitalWrite(SCHED_SLOT1_PIN, msg->slot1_on ? HIGH : LOW);
             digitalWrite(SCHED_SLOT2_PIN, msg->slot2_on ? HIGH : LOW);
             break;
@@ -42,13 +54,16 @@ void onReceive(const uint8_t* mac, const uint8_t* data, int len) {
 } // namespace Anonymous
 
 void SlaveApp::begin() {
-
     Serial.begin(115200);
     delay(100);
 
     pinMode(LED_CONTROL_PIN, OUTPUT);
     pinMode(SCHED_SLOT1_PIN, OUTPUT);
     pinMode(SCHED_SLOT2_PIN, OUTPUT);
+
+    ledcSetup(PWM_CHANNEL, PWM_FREQ, PWM_RES);
+    ledcAttachPin(PWM_PIN, PWM_CHANNEL);
+
 
     Serial.println("[SLAVE] Iniciando...");
     EspNowInterface::begin(1); // WIFI Channel

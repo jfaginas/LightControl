@@ -72,8 +72,7 @@ private:
 
     void applySchedule(const DateTime& now, bool enableFlag);
     void applySchedule2(const DateTime& now, bool enableFlag);
-    bool isWithinInterval(const TimePoint& now, const TimePoint& on, const TimePoint& off);
-
+    bool isTimeInSlot(uint16_t currentMin, const ScheduleSlot &slot, uint8_t dayIndex);
     void loadFromEEPROM();
     void loadFromEEPROM2();
     void saveToEEPROM();

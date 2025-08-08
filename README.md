@@ -17,6 +17,7 @@ El proyecto **LightControl** permite controlar salidas de manera remota desde un
 
 - ### **Con la pantalla táctil Nextion desde el Master:**
   - Muestra la fecha y hora actual.
+  - Permite controlar el encendido /apagado de la luz ambiental (GPIO2 en los slaves) con tres valores de iluminación a la luz ambiental (GPIO19): alta (100%) media (66%) y baja (33%).
   - Permite modificar fecha y hora.
   - Soporta programación de encendidos/apagados diarios (hasta 2 ciclos por día denominados slots).
   - Almacena los datos de los ciclos programados en una memoria EEPROM externa (24C32).
@@ -110,6 +111,8 @@ LightControl
 |---------------------|------------------|-------------------------------------------|
 | **LED azul**  | GPIO32            | Salida Desinfección simulada (led externo)     |
 | **LED rojo**  | GPIO33            | Salida Purificación simulada (led externo) |
+| **LED azul built in**  | GPIO02            | Salida simulada luz ambiental (led interno) |
+| **Control intensidad**  | GPIO19            | Salida para controlar por PWM la luz ambiental |
 ---
 
 ## 🧱 Diseño modular

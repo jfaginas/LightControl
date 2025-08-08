@@ -8,8 +8,8 @@ static bool lastSentStateSlot2 = false;
 SchedulerManager::SchedulerManager() : ledState(false) {}
 
 void SchedulerManager::begin() {
-    pinMode(SCHEDULER_LED_PIN, OUTPUT);
-    pinMode(SCHEDULER_LED2_PIN, OUTPUT);   // GPIO25
+    pinMode(SCHEDULER_LED_PIN, OUTPUT);    // GPIO02 en Master
+    pinMode(SCHEDULER_LED2_PIN, OUTPUT);   // GPIO25 en Master
     loadFromEEPROM();
     loadFromEEPROM2();
 }
@@ -40,97 +40,80 @@ bool SchedulerManager::getSlot2State() const {
     return lastSentStateSlot2;  // o la variable correspondiente
 }
 
+// Devuelve minutos transcurridos desde el inicio de la semana (lunes 00:00 = 0)
+static uint16_t timeInWeek(uint8_t day, const TimePoint& time) {
+    return day * 1440 + time.hour * 60 + time.minute;
+}
+
 void SchedulerManager::applySchedule(const DateTime& now, bool enableFlag) {
-    ledState = false;
-    if (!enableFlag) return;
+    if (!enableFlag) {
+        ledState = false;
+        return;
+    }
 
-    TimePoint current = { now.hour, now.minute };
-
-    // Día actual
     uint8_t indexToday = (now.weekday + 5) % 7;
-    const DailySchedule& today = schedule.days[indexToday];
-
-    // Día anterior
     uint8_t indexYesterday = (indexToday + 6) % 7;  // día anterior
-    const DailySchedule& yesterday = schedule.days[indexYesterday];
 
-    // Ver slots del día actual
-    for (const auto& slot : today.slots) {
-        if (!slot.enabled) continue;
-        if (isWithinInterval(current, slot.onTime, slot.offTime)) {
-            ledState = true;
-            return;
+    uint16_t currentMinutes = timeInWeek(indexToday, {now.hour, now.minute});
+
+    bool isOn = false;
+
+    for (int s = 0; s < 2; ++s) {
+        const ScheduleSlot& slotToday = schedule.days[indexToday].slots[s];
+        const ScheduleSlot& slotYesterday = schedule.days[indexYesterday].slots[s];
+
+        if (slotToday.enabled && isTimeInSlot(currentMinutes, slotToday, indexToday)) {
+            isOn = true;
+        }
+
+        if (slotYesterday.enabled && isTimeInSlot(currentMinutes, slotYesterday, indexYesterday)) {
+            isOn = true;
         }
     }
 
-    // Ver slots del día anterior que cruzan medianoche
-    for (const auto& slot : yesterday.slots) {
-        if (!slot.enabled) continue;
-        uint16_t onMin  = slot.onTime.hour * 60 + slot.onTime.minute;
-        uint16_t offMin = slot.offTime.hour * 60 + slot.offTime.minute;
-        if (onMin > offMin) {  // cruza medianoche
-            if (isWithinInterval(current, slot.onTime, slot.offTime)) {
-                if (current >= slot.offTime) {
-                  continue;
-                }
-                ledState = true;
-                return;
-            }
-        }
-    }
+    ledState = isOn;
 }
 
 void SchedulerManager::applySchedule2(const DateTime& now, bool enableFlag) {
-    led2State = false;
-    if (!enableFlag) return;
-
-    TimePoint current = { now.hour, now.minute };
+    if (!enableFlag) {
+        led2State = false;
+        return;
+    }
 
     uint8_t indexToday = (now.weekday + 5) % 7;
-    const DailySchedule& today = schedule2.days[indexToday];
-
     uint8_t indexYesterday = (indexToday + 6) % 7;
-    const DailySchedule& yesterday = schedule2.days[indexYesterday];
 
-    for (const auto& slot : today.slots) {
-        if (!slot.enabled) continue;
-        if (isWithinInterval(current, slot.onTime, slot.offTime)) {
-            led2State = true;
-            return;
+    uint16_t currentMinutes = timeInWeek(indexToday, {now.hour, now.minute});
+
+    bool isOn = false;
+
+    for (int s = 0; s < 2; ++s) {
+        const ScheduleSlot& slotToday = schedule2.days[indexToday].slots[s];
+        const ScheduleSlot& slotYesterday = schedule2.days[indexYesterday].slots[s];
+
+        if (slotToday.enabled && isTimeInSlot(currentMinutes, slotToday, indexToday)) {
+            isOn = true;
+        }
+
+        if (slotYesterday.enabled && isTimeInSlot(currentMinutes, slotYesterday, indexYesterday)) {
+            isOn = true;
         }
     }
 
-    for (const auto& slot : yesterday.slots) {
-        if (!slot.enabled) continue;
-        uint16_t onMin  = slot.onTime.hour * 60 + slot.onTime.minute;
-        uint16_t offMin = slot.offTime.hour * 60 + slot.offTime.minute;
-        if (onMin > offMin) {
-            if (isWithinInterval(current, slot.onTime, slot.offTime)) {
-                 if (current >= slot.offTime) {
-                  continue;
-                }
-                led2State = true;
-                return;
-            }
-        }
-    }
+    led2State = isOn;
 }
 
-bool SchedulerManager::isWithinInterval(const TimePoint& now, const TimePoint& start, const TimePoint& end) {
-    uint16_t nowMin   = now.hour * 60 + now.minute;
-    uint16_t startMin = start.hour * 60 + start.minute;
-    uint16_t endMin   = end.hour * 60 + end.minute;
+bool SchedulerManager::isTimeInSlot(uint16_t currentMin, const ScheduleSlot& slot, uint8_t dayIndex) {
+    uint16_t onMin = timeInWeek(dayIndex, slot.onTime);
+    uint16_t offMin = timeInWeek(dayIndex, slot.offTime);
 
-    if (startMin < endMin) {
-        // Caso normal: dentro del mismo día
-        return nowMin >= startMin && nowMin < endMin;
-    } else if (startMin > endMin) {
-        // Caso overnight: el intervalo cruza medianoche
-        return nowMin >= startMin || nowMin < endMin;
-    } else {
-        // Caso especial: start == end → sin duración
-        return false;
+    // Cruza medianoche
+    if (offMin <= onMin) {
+        offMin += 1440; // agregar un día
+        if (currentMin < onMin) currentMin += 10080; // ajustar a la misma "semana extendida"
     }
+
+    return currentMin >= onMin && currentMin < offMin;
 }
 
 void SchedulerManager::setSchedule(uint8_t day, uint8_t slot, const TimePoint& on, const TimePoint& off, bool enabled) {
